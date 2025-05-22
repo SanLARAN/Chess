@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Шахматы с Картами</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #0A1E4A;
+      color: white;
+      text-align: center;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+    }
+    .profile {
+      display: flex;
+      align-items: center;
+    }
+    .avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: white;
+      margin-right: 12px;
+      border: 3px solid #1C4CFF;
+    }
+    .menu {
+      font-size: 32px;
+      cursor: pointer;
+    }
+    .nickname {
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .mmr {
+      color: #7CA8FF;
+      font-size: 14px;
+    }
+    .chess-king {
+      margin: 60px auto;
+      width: 140px;
+    }
+    .search-button {
+      background-color: #1C4CFF;
+      border-radius: 20px;
+      padding: 20px;
+      font-size: 32px;
+      color: white;
+      border: none;
+      width: 80%;
+      max-width: 400px;
+      margin: 0 auto;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="profile">
+      <div class="avatar" id="avatar"></div>
+      <div>
+        <div class="nickname" id="nickname">Nick Name</div>
+        <div class="mmr" id="mmr">1000 mmr</div>
+      </div>
+    </div>
+    <div class="menu">&#9776;</div>
+  </div>
+
+  <img src="Монтажная область 1.png" alt="King" class="chess-king">
+
+  <button class="search-button">ПОИСК</button>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const user = tg.initDataUnsafe?.user;
+    if (user) {
+      document.getElementById("nickname").textContent = user.first_name;
+      document.getElementById("avatar").style.backgroundImage = `url('https://t.me/i/userpic/320/${user.id}.jpg')`;
+      document.getElementById("avatar").style.backgroundSize = "cover";
+      document.getElementById("mmr").textContent = '300 mmr'; // по умолчанию
+    }
+  </script>
+</body>
+</html>
