@@ -5,119 +5,103 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chess Alko</title>
 
-  <!-- Telegram WebApp SDK -->
+  <!-- Telegram SDK & Login Widget -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Telegram Login Widget -->
-  <script async src="https://telegram.org/js/telegram-widget.js?15" data-telegram-login="YOUR_BOT_USERNAME" data-size="large" data-userpic="true" data-lang="ru" data-on-auth="onTelegramAuth(user)" data-request-access="write"></script>
+  <script async src="https://telegram.org/js/telegram-widget.js?15"
+    data-telegram-login="YOUR_BOT_USERNAME"
+    data-size="large"
+    data-userpic="true"
+    data-lang="ru"
+    data-on-auth="onTelegramAuth(user)"
+    data-request-access="write">
+  </script>
 
   <!-- Chessboard.js & Chess.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 
   <style>
-    body { margin: 0; font-family: 'Arial', sans-serif; background-color: #081b4c; color: white; }
-    .header { background-color: #123b93; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #081b4c; color: #fff; }
+    .header { background: #123b93; display: flex; justify-content: space-between; padding: 10px 20px; align-items: center; }
     .logo { font-size: 24px; font-weight: bold; }
     .logo span { color: #44aaff; }
     .profile { display: flex; align-items: center; gap: 10px; }
-    .profile img { width: 32px; height: 32px; border-radius: 50%; background: white; }
-    .main { display: flex; padding: 20px; gap: 20px; }
-    .history, .leaderboard { background-color: #0b2464; padding: 20px; border-radius: 16px; width: 300px; max-height: 400px; overflow-y: auto; }
-    .match, .leaderboard-entry { background-color: #0f2f7a; border-radius: 12px; padding: 10px; margin-bottom: 10px; }
-    .match img { width: 50px; height: auto; float: right; }
-    .footer { position: absolute; bottom: 20px; right: 20px; text-align: right; }
-    .search-btn, .login-btn { background: #0b4ac0; border: none; padding: 15px 30px; font-size: 24px; color: white; border-radius: 16px; cursor: pointer; margin-top: 10px; }
-    .rating { font-size: 14px; margin-bottom: 5px; }
-    .rating span { color: #44aaff; }
-    #board { width: 400px; margin: 20px auto; display: none; }
+    .profile img { width: 32px; height: 32px; border-radius: 50%; }
+    .container { display: flex; gap: 20px; padding: 20px; }
+    .box { background: #0b2464; border-radius: 12px; padding: 15px; width: 300px; max-height: 400px; overflow-y: auto; }
+    .entry { background: #0f2f7a; border-radius: 8px; padding: 8px; margin-bottom: 8px; }
+    .footer { position: fixed; bottom: 20px; right: 20px; text-align: right; }
+    .btn { background: #0b4ac0; border: none; padding: 12px 24px; font-size: 18px; color: #fff; border-radius: 12px; cursor: pointer; }
+    #board { width: 320px; margin: 20px auto; display: none; }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo">Chess<span>`alko</span></div>
     <div class="profile">
-      <button id="login-btn" class="login-btn">Войти через Telegram</button>
-      <div id="profile-name">Гость</div>
+      <div id="login-widget"></div>
+      <span id="profile-name">Гость</span>
       <img id="profile-pic" src="https://via.placeholder.com/32" alt="avatar" />
     </div>
   </div>
 
-  <div class="main" id="main-container">
-    <div class="history">
-      <h2>История <span style="color: #44aaff; font-size: 16px"><span id="mmr">1000</span> mmr</span></h2>
-      <!-- Пример матчей (можно обновлять динамически) -->
-      <div class="match">
-        <strong>Матч 1</strong> <span style="color: #00ff99;">+15</span> Победа
-        <br><span id="profile-name-history">Nick</span> <b>vs</b> NickPro <img src="/mnt/data/12.png" alt="board" />
-      </div>
+  <div class="container" id="main-container">
+    <div class="box">
+      <h3>История <span id="mmr-box">1000</span> mmr</h3>
+      <div class="entry">Матч 1: Nick vs NickPro — +15 Победа</div>
+      <div class="entry">Матч 2: Nick vs Alice — -10 Поражение</div>
       <!-- ... -->
     </div>
-
-    <div class="leaderboard">
-      <h2>Топ игроков</h2>
-      <div class="leaderboard-entry">🥇 Alice — 1450 ммр</div>
-      <div class="leaderboard-entry">🥈 Bob — 1320 ммр</div>
-      <div class="leaderboard-entry">🥉 Charlie — 1280 ммр</div>
-      <div class="leaderboard-entry"><span id="profile-name-leader">Гость</span> — <span id="user-mmr">1000</span> ммр</div>
+    <div class="box">
+      <h3>Топ игроков</h3>
+      <div class="entry">🥇 Alice — 1450</div>
+      <div class="entry">🥈 Bob — 1320</div>
+      <div class="entry">🥉 Charlie — 1280</div>
+      <div class="entry" id="user-entry">Гость — 1000</div>
     </div>
   </div>
 
   <div id="board"></div>
 
   <div class="footer">
-    <div class="rating">Ваш рейтинг: <span id="mmr-display">1000</span> &nbsp;~<span id="level">5</span> <i>lvl</i></div>
-    <button id="search-btn" class="search-btn">ПОИСК</button>
+    <div>Ваш рейтинг: <span id="mmr">1000</span> ~<span id="level">5</span> lvl</div>
+    <button id="search-btn" class="btn">ПОИСК</button>
   </div>
 
   <script>
-    // Сохранение и отображение MMR и уровня
-    let mmr = parseInt(localStorage.getItem('mmr')) || 1000;
-    document.getElementById('mmr').textContent = mmr;
-    document.getElementById('mmr-display').textContent = mmr;
-    document.getElementById('user-mmr').textContent = mmr;
+    // MMR и уровень
+    let mmr = +localStorage.getItem('mmr') || 1000;
     const level = Math.min(10, Math.floor(mmr / 250) + 1);
+    document.getElementById('mmr').textContent = mmr;
+    document.getElementById('mmr-box').textContent = mmr;
     document.getElementById('level').textContent = level;
+    document.getElementById('user-entry').textContent = `${localStorage.getItem('user_name')||'Гость'} — ${mmr}`;
 
     // Telegram WebApp
     const tg = window.Telegram.WebApp;
     tg.ready();
-
     function onTelegramAuth(user) {
       document.getElementById('profile-name').textContent = user.first_name;
       document.getElementById('profile-pic').src = user.photo_url || 'https://via.placeholder.com/32';
-      document.getElementById('login-btn').style.display = 'none';
-      document.getElementById('profile-name-history').textContent = user.first_name;
-      document.getElementById('profile-name-leader').textContent = user.first_name;
       localStorage.setItem('user_name', user.first_name);
       localStorage.setItem('user_avatar', user.photo_url || '');
+      localStorage.setItem('mmr', mmr);
+      document.getElementById('login-widget').style.display = 'none';
     }
+    window.onTelegramAuth = onTelegramAuth;
 
-    document.getElementById('login-btn').addEventListener('click', () => {
-      // Вне Telegram: окно авторизации
-      // Если внутри WebApp, user уже доступен через tg.initDataUnsafe
-      if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        const user = tg.initDataUnsafe.user;
-        onTelegramAuth(user);
-      } else {
-        // Показываем Telegram Login Widget
-        alert('Для авторизации снаружи приложения используйте виджет.');
-      }
-    });
-
-    // Инициализация шахматной доски
+    // Инициализация доски
     const board = Chessboard('board', { position: 'start', draggable: true });
 
-    // Поиск соперника (заглушка)
-    document.getElementById('search-btn').addEventListener('click', () => {
+    // Кнопка ПОИСК
+    document.getElementById('search-btn').onclick = () => {
       document.getElementById('main-container').style.display = 'none';
       document.getElementById('board').style.display = 'block';
-      document.getElementById('search-btn').textContent = 'Поиск...';
-      // Здесь можно добавить логику поиска и начала партии
-      setTimeout(() => {
-        document.getElementById('search-btn').textContent = 'Начать Партию';
-      }, 2000);
-    });
+      const btn = document.getElementById('search-btn');
+      btn.textContent = 'Поиск...';
+      setTimeout(() => btn.textContent = 'Начать Партию', 2000);
+    };
   </script>
 </body>
 </html>
