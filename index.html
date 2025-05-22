@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chess Alko</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
       margin: 0;
@@ -85,15 +86,15 @@
   <div class="header">
     <div class="logo">Chess<span>`alko</span></div>
     <div class="profile">
-      <div>log in with telegram</div>
-      <div>Nick</div>
-      <img src="https://via.placeholder.com/32" alt="avatar" />
+      <div id="login-status">log in with telegram</div>
+      <div id="profile-name">Nick</div>
+      <img id="profile-pic" src="https://via.placeholder.com/32" alt="avatar" />
     </div>
   </div>
 
   <div class="main">
     <div class="history">
-      <h2>История <span style="color: #44aaff; font-size: 16px">1000 mmr</span></h2>
+      <h2>История <span style="color: #44aaff; font-size: 16px"><span id="mmr">1000</span> mmr</span></h2>
       <div class="match">
         <strong>Матч 1</strong> <span style="color: #00ff99;">+15</span> Победа
         <br>Nick <b>vs</b> NickPro <img src="/mnt/data/12.png" alt="board" />
@@ -110,15 +111,36 @@
   </div>
 
   <div class="footer">
-    <div class="rating">Ваш рейтинг: <span id="mmr">1000</span> &nbsp;~<span id="level">5</span> <i>lvl</i></div>
+    <div class="rating">Ваш рейтинг: <span id="mmr-display">1000</span> &nbsp;~<span id="level">5</span> <i>lvl</i></div>
     <button class="search-btn">ПОИСК</button>
   </div>
 
   <script>
-    const mmr = 1000;
+    const mmr = localStorage.getItem('mmr') || 1000;
     document.getElementById('mmr').textContent = mmr;
+    document.getElementById('mmr-display').textContent = mmr;
     const level = Math.min(10, Math.floor(mmr / 250) + 1);
     document.getElementById('level').textContent = level;
+
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      const user = tg.initDataUnsafe.user;
+      document.getElementById('profile-name').textContent = user.first_name || 'Пользователь';
+      if (user.photo_url) {
+        document.getElementById('profile-pic').src = user.photo_url;
+      }
+      document.getElementById('login-status').textContent = '';
+      localStorage.setItem('user_name', user.first_name);
+      localStorage.setItem('user_avatar', user.photo_url || '');
+    } else {
+      // fallback to saved local data
+      const savedName = localStorage.getItem('user_name');
+      const savedAvatar = localStorage.getItem('user_avatar');
+      if (savedName) document.getElementById('profile-name').textContent = savedName;
+      if (savedAvatar) document.getElementById('profile-pic').src = savedAvatar;
+    }
   </script>
 </body>
 </html>
