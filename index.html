@@ -1,93 +1,124 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Шахматы с Картами</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess Alko</title>
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #0A1E4A;
+      font-family: 'Arial', sans-serif;
+      background-color: #081b4c;
       color: white;
-      text-align: center;
     }
     .header {
+      background-color: #123b93;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px;
+      padding: 10px 20px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .logo span {
+      color: #44aaff;
     }
     .profile {
       display: flex;
       align-items: center;
+      gap: 10px;
     }
-    .avatar {
-      width: 50px;
-      height: 50px;
+    .profile img {
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      background-color: white;
-      margin-right: 12px;
-      border: 3px solid #1C4CFF;
+      background: white;
     }
-    .menu {
-      font-size: 32px;
+    .main {
+      display: flex;
+      padding: 20px;
+    }
+    .history {
+      background-color: #0b2464;
+      padding: 20px;
+      border-radius: 16px;
+      width: 300px;
+    }
+    .match {
+      background-color: #0f2f7a;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .match img {
+      width: 50px;
+      height: auto;
+      float: right;
+    }
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      text-align: right;
+    }
+    .search-btn {
+      background: #0b4ac0;
+      border: none;
+      padding: 15px 30px;
+      font-size: 24px;
+      color: white;
+      border-radius: 16px;
       cursor: pointer;
     }
-    .nickname {
-      font-weight: bold;
-      font-size: 18px;
-    }
-    .mmr {
-      color: #7CA8FF;
+    .rating {
       font-size: 14px;
+      margin-bottom: 5px;
     }
-    .chess-king {
-      margin: 60px auto;
-      width: 140px;
-    }
-    .search-button {
-      background-color: #1C4CFF;
-      border-radius: 20px;
-      padding: 20px;
-      font-size: 32px;
-      color: white;
-      border: none;
-      width: 80%;
-      max-width: 400px;
-      margin: 0 auto;
-      box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+    .rating span {
+      color: #44aaff;
     }
   </style>
 </head>
 <body>
   <div class="header">
+    <div class="logo">Chess<span>`alko</span></div>
     <div class="profile">
-      <div class="avatar" id="avatar"></div>
-      <div>
-        <div class="nickname" id="nickname">Nick Name</div>
-        <div class="mmr" id="mmr">1000 mmr</div>
-      </div>
+      <div>log in with telegram</div>
+      <div>Nick</div>
+      <img src="https://via.placeholder.com/32" alt="avatar" />
     </div>
-    <div class="menu">&#9776;</div>
   </div>
 
-  <img src="Монтажная область 1.png" alt="King" class="chess-king">
+  <div class="main">
+    <div class="history">
+      <h2>История <span style="color: #44aaff; font-size: 16px">1000 mmr</span></h2>
+      <div class="match">
+        <strong>Матч 1</strong> <span style="color: #00ff99;">+15</span> Победа
+        <br>Nick <b>vs</b> NickPro <img src="/mnt/data/12.png" alt="board" />
+      </div>
+      <div class="match">
+        <strong>Матч 1</strong> <span style="color: #00ff99;">+15</span> Победа
+        <br>Nick <b>vs</b> NickPro <img src="/mnt/data/12.png" alt="board" />
+      </div>
+      <div class="match">
+        <strong>Матч 1</strong> <span style="color: #00ff99;">+15</span> Победа
+        <br>Nick <b>vs</b> NickPro <img src="/mnt/data/12.png" alt="board" />
+      </div>
+    </div>
+  </div>
 
-  <button class="search-button">ПОИСК</button>
+  <div class="footer">
+    <div class="rating">Ваш рейтинг: <span id="mmr">1000</span> &nbsp;~<span id="level">5</span> <i>lvl</i></div>
+    <button class="search-btn">ПОИСК</button>
+  </div>
 
   <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-      document.getElementById("nickname").textContent = user.first_name;
-      document.getElementById("avatar").style.backgroundImage = `url('https://t.me/i/userpic/320/${user.id}.jpg')`;
-      document.getElementById("avatar").style.backgroundSize = "cover";
-      document.getElementById("mmr").textContent = '300 mmr'; // по умолчанию
-    }
+    const mmr = 1000;
+    document.getElementById('mmr').textContent = mmr;
+    const level = Math.min(10, Math.floor(mmr / 250) + 1);
+    document.getElementById('level').textContent = level;
   </script>
 </body>
 </html>
