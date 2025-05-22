@@ -40,8 +40,9 @@
     .main {
       display: flex;
       padding: 20px;
+      gap: 20px;
     }
-    .history {
+    .history, .leaderboard {
       background-color: #0b2464;
       padding: 20px;
       border-radius: 16px;
@@ -80,6 +81,12 @@
     .rating span {
       color: #44aaff;
     }
+    .leaderboard-entry {
+      background-color: #0f2f7a;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -108,6 +115,14 @@
         <br>Nick <b>vs</b> NickPro <img src="/mnt/data/12.png" alt="board" />
       </div>
     </div>
+
+    <div class="leaderboard">
+      <h2>Топ игроков</h2>
+      <div class="leaderboard-entry">🥇 Alice — 1450 ммр</div>
+      <div class="leaderboard-entry">🥈 Bob — 1320 ммр</div>
+      <div class="leaderboard-entry">🥉 Charlie — 1280 ммр</div>
+      <div class="leaderboard-entry">Nick — <span id="user-mmr">1000</span> ммр</div>
+    </div>
   </div>
 
   <div class="footer">
@@ -119,6 +134,7 @@
     const mmr = localStorage.getItem('mmr') || 1000;
     document.getElementById('mmr').textContent = mmr;
     document.getElementById('mmr-display').textContent = mmr;
+    document.getElementById('user-mmr').textContent = mmr;
     const level = Math.min(10, Math.floor(mmr / 250) + 1);
     document.getElementById('level').textContent = level;
 
@@ -135,7 +151,6 @@
       localStorage.setItem('user_name', user.first_name);
       localStorage.setItem('user_avatar', user.photo_url || '');
     } else {
-      // fallback to saved local data
       const savedName = localStorage.getItem('user_name');
       const savedAvatar = localStorage.getItem('user_avatar');
       if (savedName) document.getElementById('profile-name').textContent = savedName;
