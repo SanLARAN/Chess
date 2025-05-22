@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chess Alko</title>
 
-  <!-- Telegram SDK & Login Widget -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Telegram Login Widget -->
   <script async src="https://telegram.org/js/telegram-widget.js?15"
     data-telegram-login="YOUR_BOT_USERNAME"
     data-size="large"
@@ -16,7 +15,7 @@
     data-request-access="write">
   </script>
 
-  <!-- Chessboard.js & Chess.js -->
+  <!-- Chessboard.css & Chessboard.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
@@ -40,7 +39,6 @@
   <div class="header">
     <div class="logo">Chess<span>`alko</span></div>
     <div class="profile">
-      <div id="login-widget"></div>
       <span id="profile-name">Гость</span>
       <img id="profile-pic" src="https://via.placeholder.com/32" alt="avatar" />
     </div>
@@ -49,8 +47,7 @@
   <div class="container" id="main-container">
     <div class="box">
       <h3>История <span id="mmr-box">1000</span> mmr</h3>
-      <div class="entry">Матч 1: Nick vs NickPro — +15 Победа</div>
-      <div class="entry">Матч 2: Nick vs Alice — -10 Поражение</div>
+      <div class="entry">Матч 1: <span id="entry-player">Гость</span> vs Alice — +15 Победа</div>
       <!-- ... -->
     </div>
     <div class="box">
@@ -77,17 +74,19 @@
     document.getElementById('mmr-box').textContent = mmr;
     document.getElementById('level').textContent = level;
     document.getElementById('user-entry').textContent = `${localStorage.getItem('user_name')||'Гость'} — ${mmr}`;
+    document.getElementById('entry-player').textContent = localStorage.getItem('user_name')||'Гость';
 
-    // Telegram WebApp
-    const tg = window.Telegram.WebApp;
-    tg.ready();
+    // Telegram Login Widget callback
     function onTelegramAuth(user) {
       document.getElementById('profile-name').textContent = user.first_name;
       document.getElementById('profile-pic').src = user.photo_url || 'https://via.placeholder.com/32';
       localStorage.setItem('user_name', user.first_name);
       localStorage.setItem('user_avatar', user.photo_url || '');
       localStorage.setItem('mmr', mmr);
-      document.getElementById('login-widget').style.display = 'none';
+      // Обновить в интерфейсе
+      document.getElementById('user-entry').textContent = `${user.first_name} — ${mmr}`;
+      document.getElementById('entry-player').textContent = user.first_name;
+      document.querySelector('script[data-telegram-login]').remove();
     }
     window.onTelegramAuth = onTelegramAuth;
 
