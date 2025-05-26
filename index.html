@@ -2,43 +2,40 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Шахматы с картами</title>
-  <link rel="stylesheet" href="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+  <title>Шахматы с Картами</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css">
   <style>
     body {
       font-family: sans-serif;
-      background: #f0f0f0;
+      background: #eee;
       text-align: center;
       padding: 20px;
     }
-    #board { width: 400px; margin: 0 auto; }
+    #board {
+      width: 400px;
+      margin: 0 auto;
+    }
+    #status {
+      font-weight: bold;
+      margin: 10px;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+    }
     .hand {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
       justify-content: center;
-      margin-top: 20px;
+      gap: 10px;
     }
     .card {
-      background: white;
       border: 2px solid #333;
+      background: #fff;
       padding: 10px;
       border-radius: 8px;
       cursor: pointer;
-      max-width: 120px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-    .card:hover {
-      background: #f9f9f9;
-    }
-    #status {
-      margin: 10px;
-      font-weight: bold;
-    }
-    button {
-      margin-top: 10px;
-      padding: 6px 12px;
-      font-size: 14px;
+      width: 120px;
     }
   </style>
 </head>
@@ -51,8 +48,9 @@
 
   <div class="hand" id="hand"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0/chess.min.js"></script>
-  <script src="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <!-- Скрипты chess.js и chessboard.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"></script>
 
   <script>
     const game = new Chess();
@@ -61,7 +59,7 @@
 
     const playerState = {
       hand: [],
-      frozenPieces: {} // например: { 'e7': 1 }
+      frozenPieces: {}
     };
 
     const cardPool = [
@@ -78,29 +76,28 @@
         id: "teleport",
         name: "🌀 Телепорт",
         description: "Переместите свою фигуру на свободную клетку.",
-        effect: (fromSquare, toSquare) => {
-          const piece = game.get(fromSquare);
+        effect: (from, to) => {
+          const piece = game.get(from);
           if (!piece || piece.color !== currentTurn) {
-            alert("Неверный выбор фигуры.");
+            alert("Выберите свою фигуру.");
             return;
           }
-          if (game.get(toSquare)) {
+          if (game.get(to)) {
             alert("Клетка занята.");
             return;
           }
-          game.remove(fromSquare);
-          game.put(piece, toSquare);
+          game.remove(from);
+          game.put(piece, to);
           board.position(game.fen());
-          alert(`Фигура телепортирована на ${toSquare}`);
         }
       },
       {
         id: "double_move",
         name: "⚡ Двойной ход",
-        description: "Сделайте дополнительный ход сразу.",
+        description: "Сделайте дополнительный ход.",
         effect: () => {
           extraMove = true;
-          alert("Ты можешь сделать ещё один ход!");
+          alert("Дополнительный ход активирован!");
         }
       }
     ];
@@ -112,9 +109,8 @@
     });
 
     function onDrop(source, target) {
-      // Проверка заморозки
       if (playerState.frozenPieces[source]) {
-        alert("Эта фигура заморожена!");
+        alert("Эта фигура заморожена.");
         return 'snapback';
       }
 
@@ -132,25 +128,19 @@
     function switchTurn() {
       currentTurn = currentTurn === 'w' ? 'b' : 'w';
 
-      // Снижаем длительность заморозки
       for (const square in playerState.frozenPieces) {
         playerState.frozenPieces[square]--;
-        if (playerState.frozenPieces[square] <= 0) delete playerState.frozenPieces[square];
+        if (playerState.frozenPieces[square] <= 0)
+          delete playerState.frozenPieces[square];
       }
 
       updateStatus();
     }
 
     function updateStatus() {
-      const status = document.getElementById('status');
+      const status = document.getElementById("status");
       if (game.game_over()) {
-        if (game.in_checkmate()) {
-          status.textContent = 'Мат!';
-        } else if (game.in_draw()) {
-          status.textContent = 'Ничья!';
-        } else {
-          status.textContent = 'Игра окончена.';
-        }
+        status.textContent = "Игра окончена.";
       } else {
         status.textContent = `Ход ${currentTurn === 'w' ? 'белых' : 'чёрных'}`;
       }
@@ -163,13 +153,12 @@
     }
 
     function renderHand() {
-      const hand = document.getElementById('hand');
-      hand.innerHTML = '';
-
+      const hand = document.getElementById("hand");
+      hand.innerHTML = "";
       playerState.hand.forEach((card, index) => {
-        const el = document.createElement('div');
-        el.className = 'card';
-        el.innerHTML = `<strong>${card.name}</strong><br><small>${card.description}</small>`;
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `<b>${card.name}</b><br><small>${card.description}</small>`;
         el.onclick = () => useCard(index);
         hand.appendChild(el);
       });
@@ -179,15 +168,14 @@
       const card = playerState.hand[index];
       if (!card) return;
 
-      // Простой эффект
       if (card.id === "freeze") {
-        const square = prompt("Выберите клетку с вражеской фигурой (например, e7):");
-        if (square) card.effect(square);
+        const sq = prompt("Клетка врага (например: e7):");
+        if (sq) card.effect(sq);
       }
 
       if (card.id === "teleport") {
-        const from = prompt("Откуда телепортировать? (например, b1)");
-        const to = prompt("Куда телепортировать? (например, c3)");
+        const from = prompt("Откуда (например: b1):");
+        const to = prompt("Куда (например: c3):");
         if (from && to) card.effect(from, to);
       }
 
