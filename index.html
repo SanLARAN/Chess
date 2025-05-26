@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Шахматы с картами</title>
+  <title>Шахматы с картами – улучшенная версия</title>
   <style>
-    /* Улучшенный визуал доски и интерфейса */
+    /* Общие стили */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f0f4f8;
@@ -20,6 +20,7 @@
       flex-direction: column;
       align-items: center;
     }
+    /* Доска */
     #boardContainer {
       margin-bottom: 20px;
     }
@@ -33,18 +34,31 @@
       text-align: center;
       vertical-align: middle;
       border: 1px solid #444;
-      font-size: 20px;
-      cursor: pointer;
       position: relative;
-      transition: all 0.2s ease;
+      overflow: hidden;
+      cursor: pointer;
     }
-    /* Цвета клеток – типичные теплые тона */
+    /* Классическая раскраска клеток */
     .light-cell {
       background-color: #f0d9b5;
     }
     .dark-cell {
       background-color: #b58863;
     }
+    /* Подсветка выбранной клетки и возможных ходов */
+    .selected {
+      outline: 3px solid #32cd32 !important;
+    }
+    .move-hint {
+      outline: 2px solid #1e90ff !important;
+    }
+    /* Стили для отображения фигур (изображения) */
+    img.piece-img {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s ease;
+    }
+    /* Панель рук и кнопка для взятия карты */
     #handContainer {
       margin-bottom: 20px;
     }
@@ -66,6 +80,7 @@
       background-color: #aaa;
       cursor: not-allowed;
     }
+    /* Статус и лог */
     #statusContainer, #logContainer {
       width: 80%;
       max-width: 600px;
@@ -80,16 +95,10 @@
       overflow-y: auto;
       font-size: 14px;
     }
-    .selected {
-      outline: 3px solid #32cd32 !important;
-    }
-    .move-hint {
-      outline: 2px solid #1e90ff !important;
-    }
   </style>
 </head>
 <body>
-  <h1>Шахматы с картами</h1>
+  <h1>Шахматы с картами – улучшенная версия</h1>
   <div id="gameContainer">
     <div id="statusContainer"></div>
     <div id="boardContainer"></div>
@@ -100,7 +109,7 @@
   </div>
   
   <script>
-    // ================== Функции для логирования и подсветки ==================
+    /* ============== Функции логирования и подсветки ============== */
     function logMessage(msg) {
       const logDiv = document.getElementById("logContainer");
       const p = document.createElement("p");
@@ -108,41 +117,41 @@
       logDiv.appendChild(p);
       logDiv.scrollTop = logDiv.scrollHeight;
     }
-
     function highlightCell(x, y, type) {
       const cell = document.getElementById(`cell-${x}-${y}`);
       if (cell) {
         cell.classList.add(type);
       }
     }
-
     function clearHighlights() {
-      for (let y = 0; y < 8; y++) {
-        for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 8; y++){
+        for (let x = 0; x < 8; x++){
           let cell = document.getElementById(`cell-${x}-${y}`);
           if (cell) {
-            cell.classList.remove("selected", "move-hint");
+            cell.classList.remove("selected","move-hint");
           }
         }
       }
     }
-
-    // ================== Шахматная логика (упрощённая) ==================
+    
+    /* ============== Шахматная логика ============== */
+    // Функция для пешки: прямой ход, двойной ход на старте, диагонали для взятия.
     function getPawnMoves(piece, board) {
       let moves = [];
-      let direction = (piece.player.id === 1) ? -1 : 1;
-      let startRow = (piece.player.id === 1) ? 6 : 1;
-      let x = piece.position.x, y = piece.position.y;
+      let direction = piece.player.id === 1 ? -1 : 1;
+      let startRow = piece.player.id === 1 ? 6 : 1;
+      let {x, y} = piece.position;
       let ny = y + direction;
       if (ny >= 0 && ny < 8 && board.grid[ny][x] === null) {
-        moves.push({x: x, y: ny});
+        moves.push({x, y: ny});
         if (y === startRow) {
           let ny2 = y + 2 * direction;
           if (ny2 >= 0 && ny2 < 8 && board.grid[ny2][x] === null) {
-            moves.push({x: x, y: ny2});
+            moves.push({x, y: ny2});
           }
         }
       }
+      // Взятие по диагонали
       for (let dx of [-1, 1]) {
         let nx = x + dx;
         if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
@@ -154,37 +163,33 @@
       }
       return moves;
     }
-
+    // Ходы для коня
     function getKnightMoves(piece, board) {
       let moves = [];
-      const directions = [
-        {dx: 2, dy: 1}, {dx: 2, dy: -1},
-        {dx: -2, dy: 1}, {dx: -2, dy: -1},
-        {dx: 1, dy: 2}, {dx: -1, dy: 2},
-        {dx: 1, dy: -2}, {dx: -1, dy: -2}
+      const dirs = [
+        {dx:2, dy:1}, {dx:2, dy:-1}, {dx:-2, dy:1}, {dx:-2, dy:-1},
+        {dx:1, dy:2}, {dx:-1, dy:2}, {dx:1, dy:-2}, {dx:-1, dy:-2}
       ];
       let {x, y} = piece.position;
-      directions.forEach(d => {
+      dirs.forEach(d => {
         let nx = x + d.dx, ny = y + d.dy;
         if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
           let target = board.grid[ny][nx];
-          if (target === null || target.player.id !== piece.player.id) {
+          if (target === null || target.player.id !== piece.player.id)
             moves.push({x: nx, y: ny});
-          }
         }
       });
       return moves;
     }
-
+    // Ходы для ладьи
     function getRookMoves(piece, board) {
       let moves = [];
-      const directions = [{dx:1,dy:0}, {dx:-1,dy:0}, {dx:0,dy:1}, {dx:0,dy:-1}];
+      const dirs = [{dx:1, dy:0}, {dx:-1, dy:0}, {dx:0, dy:1}, {dx:0, dy:-1}];
       let {x, y} = piece.position;
-      directions.forEach(d => {
+      dirs.forEach(d => {
         let nx = x, ny = y;
         while (true) {
-          nx += d.dx;
-          ny += d.dy;
+          nx += d.dx; ny += d.dy;
           if (nx < 0 || nx >= 8 || ny < 0 || ny >= 8) break;
           let target = board.grid[ny][nx];
           if (target === null) {
@@ -197,16 +202,15 @@
       });
       return moves;
     }
-
+    // Ходы для слона (диагонали)
     function getBishopMoves(piece, board) {
       let moves = [];
-      const directions = [{dx:1,dy:1}, {dx:1,dy:-1}, {dx:-1,dy:1}, {dx:-1,dy:-1}];
+      const dirs = [{dx:1, dy:1}, {dx:1, dy:-1}, {dx:-1, dy:1}, {dx:-1, dy:-1}];
       let {x, y} = piece.position;
-      directions.forEach(d => {
+      dirs.forEach(d => {
         let nx = x, ny = y;
         while (true) {
-          nx += d.dx;
-          ny += d.dy;
+          nx += d.dx; ny += d.dy;
           if (nx < 0 || nx >= 8 || ny < 0 || ny >= 8) break;
           let target = board.grid[ny][nx];
           if (target === null) {
@@ -219,51 +223,44 @@
       });
       return moves;
     }
-
+    // Ферзь – объединяет ходы ладьи и слона
     function getQueenMoves(piece, board) {
       return getRookMoves(piece, board).concat(getBishopMoves(piece, board));
     }
-
+    // Король – ход на одну клетку (без рокировки)
     function getKingMoves(piece, board) {
       let moves = [];
-      const directions = [
-        {dx: 1, dy:0}, {dx:-1, dy:0}, {dx:0, dy:1}, {dx:0, dy:-1},
-        {dx: 1, dy: 1}, {dx: 1, dy: -1}, {dx: -1, dy: 1}, {dx: -1, dy: -1}
+      const dirs = [
+        {dx:1,dy:0}, {dx:-1,dy:0}, {dx:0,dy:1}, {dx:0,dy:-1},
+        {dx:1, dy:1}, {dx:1, dy:-1}, {dx:-1, dy:1}, {dx:-1, dy:-1}
       ];
       let {x, y} = piece.position;
-      directions.forEach(d => {
+      dirs.forEach(d => {
         let nx = x + d.dx, ny = y + d.dy;
         if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8) {
           let target = board.grid[ny][nx];
-          if (target === null || target.player.id !== piece.player.id) {
+          if (target === null || target.player.id !== piece.player.id)
             moves.push({x: nx, y: ny});
-          }
         }
       });
       return moves;
     }
-
     function getValidMoves(piece, board) {
       if (!piece) return [];
       switch(piece.type) {
-        case "Pawn":
-          return getPawnMoves(piece, board);
-        case "Knight":
-          return getKnightMoves(piece, board);
-        case "Bishop":
-          return getBishopMoves(piece, board);
-        case "Rook":
-          return getRookMoves(piece, board);
-        case "Queen":
-          return getQueenMoves(piece, board);
-        case "King":
-          return getKingMoves(piece, board);
-        default:
-          return [];
+        case "Pawn": return getPawnMoves(piece, board);
+        case "Knight": return getKnightMoves(piece, board);
+        case "Bishop": return getBishopMoves(piece, board);
+        case "Rook": return getRookMoves(piece, board);
+        case "Queen": return getQueenMoves(piece, board);
+        case "King": return getKingMoves(piece, board);
+        default: return [];
       }
     }
+    // !!! Дополнительно: Для полной реализации шахмат (шах, мат, рокировка, взятие на проходе)
+    // необходимы дополнительные проверки. Здесь пока используются базовые правила.
 
-    // ================== Карточная логика ==================
+    /* ============== Карточная логика ============== */
     class Card {
       constructor(name, rarity, description, effect) {
         this.name = name;
@@ -276,23 +273,23 @@
         this.effect(game, player, target);
       }
     }
-
     const cardPool = [
       new Card("Стальной Щит", "Обычная", "Защищает выбранную фигуру от захвата на один ход.", (game, player, target) => {
           if (target) {
              target.shield = true;
-             logMessage(`Фигура ${target.type} теперь под защитой на один ход.`);
+             target.shieldDuration = 1;
+             logMessage(`Фигура ${target.type} получила Стальной Щит (1 ход).`);
           } else {
              logMessage("Не выбрана цель для «Стального Щита».");
           }
       }),
       new Card("Ветер Перемен", "Обычная", "Дает дополнительный ход.", (game, player, target) => {
-          logMessage("Используется «Ветер Перемен»: игрок получает дополнительный ход.");
+          logMessage("Используется «Ветер Перемен»: дополнительный ход.");
           game.currentPlayerIndex = game.players.indexOf(player);
       }),
       new Card("Острый Клинок", "Обычная", "Мгновенно захватывает вражескую фигуру.", (game, player, target) => {
           if (target && target.player.id !== player.id) {
-             logMessage(`«Острым Клинком» удалена фигура ${target.type} противника.`);
+             logMessage(`«Острым Клинком» захвачена фигура ${target.type}.`);
              let pos = target.position;
              game.board.grid[pos.y][pos.x] = null;
           } else {
@@ -302,13 +299,14 @@
       new Card("Теневой Манёвр", "Редкая", "Скрывает выбранную фигуру от противника на один ход.", (game, player, target) => {
           if (target && target.player.id === player.id) {
               target.invisible = true;
-              logMessage(`Фигура ${target.type} становится невидимой на один ход.`);
+              target.invisibleDuration = 1;
+              logMessage(`Фигура ${target.type} стала невидимой на 1 ход.`);
           } else {
               logMessage("Цель должна принадлежать игроку для «Теневого Манёвра».");
           }
       }),
       new Card("Эхо Возмездия", "Редкая", "При следующем захвате позволяет восстановить фигуру (заглушка).", (game, player, target) => {
-          logMessage("«Эхо Возмездия» активировано: при следующем захвате фигуры её эффектом можно восстановить фигуру.");
+          logMessage("«Эхо Возмездия» активировано.");
       }),
       new Card("Смена Позиции", "Редкая", "Меняет местами две выбранные фигуры.", (game, player, target) => {
           if (target && target.piece1 && target.piece2) {
@@ -320,42 +318,43 @@
              target.piece2.position = pos1;
              logMessage(`Позиции фигур ${target.piece1.type} и ${target.piece2.type} изменены.`);
           } else {
-             logMessage("Необходимо выбрать две фигуры для «Смены Позиции».");
+             logMessage("Выберите две фигуры для «Смены Позиции».");
           }
       }),
       new Card("Пламенный Взрыв", "Эпическая", "Уничтожает все фигуры вокруг выбранной клетки.", (game, player, target) => {
           if (target) {
              let {x, y} = target.position;
-             logMessage(`«Пламенный Взрыв»: уничтожение фигур вокруг (${x}, ${y}).`);
-             const directions = [
-                {dx: -1, dy: -1}, {dx: 0, dy: -1}, {dx: 1, dy: -1},
-                {dx: -1, dy: 0},                {dx: 1, dy: 0},
-                {dx: -1, dy: 1},  {dx: 0, dy: 1},  {dx: 1, dy: 1}
+             logMessage(`«Пламенный Взрыв» вокруг (${x}, ${y}).`);
+             const dirs = [
+                {dx:-1, dy:-1}, {dx:0, dy:-1}, {dx:1, dy:-1},
+                {dx:-1, dy:0},               {dx:1, dy:0},
+                {dx:-1, dy:1},  {dx:0, dy:1},  {dx:1, dy:1}
              ];
-             directions.forEach(dir => {
-               let newX = x + dir.dx;
-               let newY = y + dir.dy;
-               if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8 && game.board.grid[newY][newX] != null) {
-                 logMessage(`Фигура ${game.board.grid[newY][newX].type} уничтожена.`);
-                 game.board.grid[newY][newX] = null;
+             dirs.forEach(d => {
+               let nx = x + d.dx, ny = y + d.dy;
+               if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8 && game.board.grid[ny][nx] != null) {
+                 logMessage(`Фигура ${game.board.grid[ny][nx].type} уничтожена.`);
+                 game.board.grid[ny][nx] = null;
                }
              });
           } else {
-             logMessage("Не выбрана цель для «Пламенного Взрыва».");
+             logMessage("Выберите цель для «Пламенного Взрыва».");
           }
       }),
       new Card("Ледяное Зачарование", "Эпическая", "Замораживает вражескую фигуру на один ход.", (game, player, target) => {
           if (target && target.player.id !== player.id) {
              target.frozen = true;
-             logMessage(`Фигура ${target.type} заморожена и не сможет двигаться в следующий ход.`);
+             target.frozenDuration = 1;
+             logMessage(`Фигура ${target.type} заморожена на 1 ход.`);
           } else {
              logMessage("Выберите вражескую фигуру для «Ледяного Зачарования».");
           }
       }),
-      new Card("Светлая Аура", "Эпическая", "Укрепляет защиту выбранной фигуры, снижая риск захвата.", (game, player, target) => {
+      new Card("Светлая Аура", "Эпическая", "Укрепляет защиту выбранной фигуры на 1 ход.", (game, player, target) => {
           if (target && target.player.id === player.id) {
              target.protected = true;
-             logMessage(`Фигура ${target.type} усилена «Светлой Аурой»: шанс захвата снижен.`);
+             target.protectedDuration = 1;
+             logMessage(`Фигура ${target.type} получила «Светлую Ауру» на 1 ход.`);
           } else {
              logMessage("Выберите свою фигуру для «Светлой Ауры».");
           }
@@ -367,22 +366,20 @@
                  game.board.grid[pos.y][pos.x] = null;
                  game.board.grid[target.destination.y][target.destination.x] = target.piece;
                  target.piece.position = { ...target.destination };
-                 logMessage(`«Вспышка Молнии»: фигура ${target.piece.type} перемещена на (${target.destination.x}, ${target.destination.y}).`);
+                 logMessage(`«Вспышка Молнии»: ${target.piece.type} перемещена.`);
               } else {
-                  logMessage("Выбрана занятая клетка для перемещения.");
+                  logMessage("Выбрана занятая клетка для «Вспышки Молнии».");
               }
           } else {
-              logMessage("Выберите свою фигуру и затем пустую клетку для «Вспышки Молнии».");
+              logMessage("Выберите фигуру и пустую клетку для «Вспышки Молнии».");
           }
       }),
       new Card("Призыв Фантома", "Легендарная", "Добавляет дополнительную пешку на свободную клетку.", (game, player, target) => {
-          logMessage("«Призыв Фантома»: добавление дополнительной пешки на случайную свободную клетку.");
+          logMessage("«Призыв Фантома»: добавляется пешка.");
           let freeCells = [];
           for (let y = 0; y < 8; y++) {
             for (let x = 0; x < 8; x++) {
-              if (game.board.grid[y][x] === null) {
-                freeCells.push({ x, y });
-              }
+              if (game.board.grid[y][x] === null) freeCells.push({ x, y });
             }
           }
           if (freeCells.length > 0) {
@@ -396,59 +393,56 @@
           }
       }),
       new Card("Темный Вихрь", "Легендарная", "Случайным образом перемещает все фигуры на одну клетку.", (game, player, target) => {
-          logMessage("«Темный Вихрь»: случайное перемещение всех фигур на одну клетку.");
-          const directions = [
+          logMessage("«Темный Вихрь»: перемещение фигур.");
+          const dirs = [
              {dx: -1, dy: 0}, {dx: 1, dy: 0}, {dx: 0, dy: -1}, {dx: 0, dy: 1}
           ];
           for (let y = 0; y < 8; y++) {
             for (let x = 0; x < 8; x++){
               let piece = game.board.grid[y][x];
-              if (piece) {
-                 let randomDir = directions[Math.floor(Math.random() * directions.length)];
-                 let newX = x + randomDir.dx;
-                 let newY = y + randomDir.dy;
-                 if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8 && game.board.grid[newY][newX] === null) {
-                    game.board.grid[newY][newX] = piece;
-                    piece.position = { x: newX, y: newY };
+              if (piece){
+                 let randomDir = dirs[Math.floor(Math.random() * dirs.length)];
+                 let nx = x + randomDir.dx, ny = y + randomDir.dy;
+                 if (nx >= 0 && nx < 8 && ny >= 0 && ny < 8 && game.board.grid[ny][nx] === null){
+                    game.board.grid[ny][nx] = piece;
+                    piece.position = { x: nx, y: ny };
                     game.board.grid[y][x] = null;
-                    logMessage(`Фигура ${piece.type} перемещена с (${x}, ${y}) на (${newX}, ${newY}).`);
+                    logMessage(`Фигура ${piece.type} перемещена с (${x}, ${y}) на (${nx}, ${ny}).`);
                  }
               }
             }
           }
       }),
       new Card("Коварный Обман", "Редкая", "Отменяет эффект вражеской карты на один ход.", (game, player, target) => {
-          logMessage("«Коварный Обман» активирован: отмена эффекта вражеской карты на один ход.");
+          logMessage("«Коварный Обман» активирован: эффекты отменяются (заглушка).");
       }),
-      new Card("Магическая Инсталляция", "Эпическая", "Комбинирует две карты для удвоения их эффекта (заглушка).", (game, player, target) => {
-          logMessage("«Магическая Инсталляция»: комбинирование двух карт для удвоения эффекта.");
+      new Card("Магическая Инсталляция", "Эпическая", "Комбинирует две карты для удвоения эффекта (заглушка).", (game, player, target) => {
+          logMessage("«Магическая Инсталляция»: комбинирование эффектов (заглушка).");
       }),
-      new Card("Божественный Суд", "Легендарная", "Сбрасывает все ходы и восстанавливает исходное расположение фигур.", (game, player, target) => {
-          logMessage("«Божественный Суд» активирован: восстановление исходного положения фигур.");
+      new Card("Божественный Суд", "Легендарная", "Восстанавливает исходное расположение фигур.", (game, player, target) => {
+          logMessage("«Божественный Суд»: восстанавливается исходная позиция.");
           game.board = new Board();
           game.board.setupPieces(game.player1, game.player2);
       })
     ];
-
+    // Функция получения случайной карты с учетом веса редкости
     function drawRandomCard() {
       let totalWeight = cardPool.reduce((sum, card) => sum + (card.rarity === "Обычная" ? 50 :
                                                               card.rarity === "Редкая" ? 30 :
                                                               card.rarity === "Эпическая" ? 15 : 5), 0);
-      let random = Math.random() * totalWeight;
+      let rand = Math.random() * totalWeight;
       for (let card of cardPool) {
-        let weight = (card.rarity === "Обычная" ? 50 :
+        let weight = card.rarity === "Обычная" ? 50 :
                      card.rarity === "Редкая" ? 30 :
-                     card.rarity === "Эпическая" ? 15 : 5);
-        random -= weight;
-        if (random < 0) {
-          return new Card(card.name, card.rarity, card.description, card.effect);
-        }
+                     card.rarity === "Эпическая" ? 15 : 5;
+        rand -= weight;
+        if (rand < 0) return new Card(card.name, card.rarity, card.description, card.effect);
       }
       let last = cardPool[cardPool.length - 1];
       return new Card(last.name, last.rarity, last.description, last.effect);
     }
-
-    // ================== Классы игроков, фигур, доски и игры ==================
+    
+    /* ============== Фигуры, доска, игрок и игра ============== */
     class Player {
       constructor(id, name) {
         this.id = id;
@@ -458,26 +452,25 @@
       }
       addCard(card) {
         if (this.hand.length >= 5) {
-          logMessage(`${this.name} не может получить карту, рука заполнена (5 карт максимум).`);
+          logMessage(`${this.name}: рука заполнена (максимум 5 карт).`);
           return;
         }
         this.hand.push(card);
-        logMessage(`${this.name} получил карту: ${card.name} (${card.rarity})`);
+        logMessage(`${this.name} получил карту: ${card.name} (${card.rarity}).`);
       }
     }
-
     class Piece {
       constructor(type, player) {
         this.type = type;
         this.player = player;
         this.position = null;
-        this.shield = false;
-        this.invisible = false;
-        this.frozen = false;
-        this.protected = false;
+        // Эффекты с длительностью (в ходах)
+        this.shield = false; this.shieldDuration = 0;
+        this.frozen = false; this.frozenDuration = 0;
+        this.invisible = false; this.invisibleDuration = 0;
+        this.protected = false; this.protectedDuration = 0;
       }
     }
-
     class Board {
       constructor() {
         this.grid = [];
@@ -487,7 +480,7 @@
       }
       setupPieces(player1, player2) {
         const backRank = ["Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook"];
-        // Игрок 2 – верхняя сторона (строки 0 и 1)
+        // Игрок 2 (черные) – верхняя сторона (строки 0 и 1)
         for (let j = 0; j < 8; j++) {
           let piece = new Piece(backRank[j], player2);
           piece.position = { x: j, y: 0 };
@@ -498,7 +491,7 @@
           piece.position = { x: j, y: 1 };
           this.grid[1][j] = piece;
         }
-        // Игрок 1 – нижняя сторона (строки 6 и 7)
+        // Игрок 1 (белые) – нижняя сторона (строки 6 и 7)
         for (let j = 0; j < 8; j++) {
           let piece = new Piece("Pawn", player1);
           piece.position = { x: j, y: 6 };
@@ -523,7 +516,7 @@
             return false;
           } else {
             if (target.shield) {
-              logMessage("Противникская фигура защищена щитом!");
+              logMessage("Фигура противника защищена щитом!");
               return false;
             }
             logMessage(`Фигура ${target.type} игрока ${target.player.name} захвачена!`);
@@ -540,7 +533,6 @@
         }
       }
     }
-
     class Game {
       constructor(player1, player2) {
         this.player1 = player1;
@@ -555,14 +547,39 @@
         logMessage("Игра началась!");
         // Раздаём каждому игроку ровно 3 карты
         this.players.forEach(player => {
-          for (let i = 0; i < 3; i++) {
+          for (let i = 0; i < 3; i++){
             player.addCard(drawRandomCard());
           }
         });
         logMessage(`Ход игрока: ${this.players[this.currentPlayerIndex].name}`);
       }
       nextTurn() {
-        this.turns += 1;
+        this.turns++;
+        // Обход по доске: уменьшаем длительность эффектов у фигур
+        for (let y = 0; y < 8; y++){
+          for (let x = 0; x < 8; x++){
+            let piece = this.board.grid[y][x];
+            if (piece){
+              if (piece.shieldDuration > 0){
+                piece.shieldDuration--;
+                if (piece.shieldDuration === 0) { piece.shield = false; }
+              }
+              if (piece.frozenDuration > 0){
+                piece.frozenDuration--;
+                if (piece.frozenDuration === 0) { piece.frozen = false; }
+              }
+              if (piece.invisibleDuration > 0){
+                piece.invisibleDuration--;
+                if (piece.invisibleDuration === 0) { piece.invisible = false; }
+              }
+              if (piece.protectedDuration > 0){
+                piece.protectedDuration--;
+                if (piece.protectedDuration === 0) { piece.protected = false; }
+              }
+            }
+          }
+        }
+        // (TODO: здесь можно добавить проверки дополнительных правил, например, шаха, рокировки и пр.)
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % 2;
         logMessage(`Следующий ход: игрок ${this.players[this.currentPlayerIndex].name}`);
       }
@@ -589,28 +606,56 @@
         this.nextTurn();
       }
     }
-
-    // ================== UI и логика взаимодействия ==================
+    
+    /* ============== Функция для отображения фигур с изображениями ============== */
+    function getPieceImage(piece) {
+      // Предполагаем: игрок 1 – белые, игрок 2 – черные.
+      const whiteImages = { 
+        "Pawn": "https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg",
+        "Knight": "https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg",
+        "Bishop": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg",
+        "Rook": "https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg",
+        "Queen": "https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg",
+        "King": "https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg"
+      };
+      const blackImages = { 
+        "Pawn": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg",
+        "Knight": "https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg",
+        "Bishop": "https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg",
+        "Rook": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg",
+        "Queen": "https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg",
+        "King": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg"
+      };
+      let imgURL = piece.player.id === 1 ? whiteImages[piece.type] : blackImages[piece.type];
+      // Если у фигуры есть эффекты, можно добавить небольшой значок (здесь просто меняется стиль изображения)
+      let style = "";
+      if (piece.shield) style += "box-shadow: 0 0 8px 2px gold;";
+      if (piece.frozen) style += "opacity: 0.6;";
+      if (piece.invisible) style += "filter: blur(2px);";
+      if (piece.protected) style += "border: 2px solid cyan;";
+      return `<img src="${imgURL}" alt="${piece.type}" class="piece-img" style="${style}">`;
+    }
+    
+    /* ============== UI и логика взаимодействия ============== */
     let game;
     let selectedMoveSource = null; // для хода фигуры
-    let selectedCard = null;       // для выбора карты с целью
+    let selectedCard = null;       // для карт, которым нужна цель
     let selectedCardIndex = -1;
-    let cardTargetData = {};       // для карт с выбором двух целей
-
+    let cardTargetData = {};
     // Карты, не требующие выбора цели
     const cardsWithoutTarget = ["Ветер Перемен", "Эхо Возмездия", "Призыв Фантома", "Темный Вихрь", "Коварный Обман", "Магическая Инсталляция", "Божественный Суд"];
-
+    
     function createBoardUI() {
       const boardDiv = document.getElementById("boardContainer");
       const table = document.createElement("table");
       table.id = "board";
-      for (let y = 0; y < 8; y++) {
+      for (let y = 0; y < 8; y++){
         const tr = document.createElement("tr");
-        for (let x = 0; x < 8; x++) {
+        for (let x = 0; x < 8; x++){
           const td = document.createElement("td");
           td.id = `cell-${x}-${y}`;
-          // Классическая раскраска клеток
-          td.className = ((x + y) % 2 === 0) ? "light-cell" : "dark-cell";
+          // Классы для раскраски клеток
+          td.className = ((x+y)%2==0) ? "light-cell" : "dark-cell";
           td.addEventListener("click", () => { onBoardCellClick(x, y); });
           tr.appendChild(td);
         }
@@ -619,25 +664,19 @@
       boardDiv.innerHTML = "";
       boardDiv.appendChild(table);
     }
-
+    
     function updateBoardUI() {
-      for (let y = 0; y < 8; y++) {
-        for (let x = 0; x < 8; x++) {
+      for (let y = 0; y < 8; y++){
+        for (let x = 0; x < 8; x++){
           const cell = document.getElementById(`cell-${x}-${y}`);
           cell.innerHTML = "";
-          cell.classList.remove("selected", "move-hint");
+          cell.classList.remove("selected","move-hint");
           const piece = game.board.grid[y][x];
           if (piece) {
-            const pieceDiv = document.createElement("div");
-            // Отображаем первую букву типа фигуры
-            pieceDiv.innerText = piece.type.charAt(0);
-            pieceDiv.style.fontWeight = "bold";
-            pieceDiv.style.color = (piece.player.id === 1) ? "red" : "blue";
-            cell.appendChild(pieceDiv);
+            cell.innerHTML = getPieceImage(piece);
           }
         }
       }
-      // Подсвечиваем выбранную фигуру и допустимые ходы
       if (selectedMoveSource) {
         highlightCell(selectedMoveSource.from.x, selectedMoveSource.from.y, "selected");
         selectedMoveSource.moves.forEach(m => {
@@ -645,7 +684,7 @@
         });
       }
     }
-
+    
     function updateHandUI() {
       const handDiv = document.getElementById("handContainer");
       handDiv.innerHTML = `<h3>Карты игрока ${getCurrentPlayer().name}</h3>`;
@@ -669,7 +708,7 @@
       });
       updateDrawCardButton();
     }
-
+    
     function updateDrawCardButton() {
       const btn = document.getElementById("drawCardBtn");
       if (getCurrentPlayer().hand.length >= 5) {
@@ -680,23 +719,22 @@
         btn.title = "";
       }
     }
-
+    
     function updateStatus() {
       const statusDiv = document.getElementById("statusContainer");
       statusDiv.innerHTML = `<strong>Ход: ${getCurrentPlayer().name}</strong> | Раунд: ${game.turns}`;
     }
-
+    
     function updateUI() {
       updateBoardUI();
       updateHandUI();
       updateStatus();
     }
-
+    
     function getCurrentPlayer() {
       return game.players[game.currentPlayerIndex];
     }
-
-    // Обработка клика по клетке доски
+    
     function onBoardCellClick(x, y) {
       if (selectedCard !== null) {
         if (selectedCard.name === "Стальной Щит") {
@@ -731,7 +769,7 @@
             let p = game.board.grid[y][x];
             if (p) {
               cardTargetData.firstPiece = p;
-              logMessage("Первая фигура выбрана. Теперь выберите вторую фигуру для «Смены Позиции».");
+              logMessage("Первая фигура выбрана. Выберите вторую для «Смены Позиции».");
             } else {
               logMessage("Выберите клетку с фигурой.");
             }
@@ -791,7 +829,7 @@
               cardTargetData = {};
               updateUI();
             } else {
-              logMessage("Выберите пустую клетку для перемещения.");
+              logMessage("Выберите пустую клетку для «Вспышки Молнии».");
             }
           }
         } else {
@@ -801,8 +839,7 @@
         }
         return;
       }
-      
-      // Если не выбрана карта – обрабатываем ход фигуры
+      // Если карта не выбрана – обрабатываем перемещение фигуры.
       if (!selectedMoveSource) {
         let piece = game.board.grid[y][x];
         if (piece && piece.player.id === getCurrentPlayer().id) {
@@ -834,8 +871,8 @@
         }
       }
     }
-
-    // Функция для действия "Взять карту": если в руке меньше 5 карт, добавить новую карту и пропустить ход
+    
+    // Действие по кнопке "Взять карту": если в руке меньше 5 карт, добавить карту и пропустить ход.
     function drawCardAction() {
       let player = getCurrentPlayer();
       if (player.hand.length >= 5) {
@@ -847,8 +884,8 @@
       game.nextTurn();
       updateUI();
     }
-
-    // ================== Инициализация игры и UI ==================
+    
+    /* ============== Инициализация игры и UI ============== */
     window.onload = function() {
       createBoardUI();
       const player1 = new Player(1, "Alice");
@@ -856,7 +893,6 @@
       game = new Game(player1, player2);
       game.start();
       updateUI();
-      // Назначаем обработчик для кнопки "Взять карту"
       document.getElementById("drawCardBtn").addEventListener("click", drawCardAction);
     };
   </script>
