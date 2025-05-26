@@ -3,29 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <title>Шахматы с Картами</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/css/chessboard.min.css">
+
+  <!-- Подключаем стили chessboard.js -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css"
+  />
+
   <style>
     body {
       font-family: sans-serif;
-      background: #eee;
+      background: #f2f2f2;
       text-align: center;
-      padding: 20px;
+      padding-top: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
     }
 
     #board {
       width: 400px;
-      margin: 0 auto 20px;
+      margin: 0 auto 10px;
+      /* Чтобы доска не “схлопнулась” */
+      border: 2px solid #333;
+      box-sizing: border-box;
     }
 
     #status {
+      font-size: 18px;
       font-weight: bold;
-      margin-bottom: 10px;
+      margin: 10px 0;
     }
 
     button {
-      margin: 5px;
-      padding: 10px 20px;
+      padding: 8px 16px;
       font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
 
     .hand {
@@ -34,93 +49,121 @@
       justify-content: center;
       gap: 10px;
       margin-top: 20px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .card {
-      border: 2px solid #333;
-      background: #fff;
-      padding: 10px;
-      border-radius: 8px;
       width: 150px;
+      background: #ffffff;
+      border: 2px solid #333;
+      border-radius: 6px;
+      padding: 8px;
       cursor: pointer;
-      transition: 0.2s;
+      transition: background-color 0.2s, transform 0.1s;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
 
     .card:hover {
-      background-color: #f0f0f0;
+      background-color: #fafafa;
+      transform: translateY(-2px);
     }
 
     .selected-card {
-      border-color: red;
+      border-color: #e74c3c;
+      background-color: #ffecec;
     }
   </style>
 </head>
 <body>
 
   <h2>♟️ Шахматы с Картами</h2>
+
+  <!-- Контейнер для доски -->
   <div id="board"></div>
+
+  <!-- Статус (чей ход) -->
   <div id="status">Ход белых</div>
+
+  <!-- Кнопка Добора Карты -->
   <button onclick="drawCard()">Взять карту</button>
 
+  <!-- Рука (список карт) -->
   <div class="hand" id="hand"></div>
 
-  <!-- chess.js и chessboard.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/js/chessboard.min.js"></script>
+  <!-- Подключаем chess.js (логика шахмат) -->
+  <script src="https://unpkg.com/chess.js@0.12.0/chess.min.js"></script>
+
+  <!-- Подключаем chessboard.js (UI шахматной доски) -->
+  <script src="https://unpkg.com/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
   <script>
+    // === 1. Инициализация шахматной логики ===
     const game = new Chess();
-    let currentTurn = 'w';
-    let extraMove = false;
-    let selectedCardIndex = null;
-    let cardTargetStep = 0;
-    let cardTargetData = [];
+    let currentTurn = 'w';      // 'w' или 'b'
+    let extraMove = false;      // если true — игрок делает дополнительный ход
 
+    // === 2. State для карт и эффектов ===
     const playerState = {
-      hand: [],
-      frozenPieces: {}
+      hand: [],             // массив карт на руке
+      frozenPieces: {}      // { 'e7': 1 } — замороженные клетки
     };
 
+    // === 3. Пул доступных карт (3 примера) ===
     const cardPool = [
       {
         id: "freeze",
         name: "❄ Заморозка",
-        description: "Выберите фигуру врага — она пропустит ход.",
-        effect: (square) => {
-          playerState.frozenPieces[square] = 1;
-          alert(`Фигура на ${square} заморожена на 1 ход!`);
+        description: "Кликни по фигуре врага — она пропустит 1 ход.",
+        // Для карты «freeze» мы храним в playerState.frozenPieces[square] = 1
+        effect: (targetSquare) => {
+          if (!game.get(targetSquare) || game.get(targetSquare).color === currentTurn) {
+            alert("Нужно выбрать вражескую фигуру!");
+            return false;
+          }
+          playerState.frozenPieces[targetSquare] = 1;
+          alert(`Фигура на ${targetSquare} заморожена!`);
+          return true;
         }
       },
       {
         id: "teleport",
         name: "🌀 Телепорт",
-        description: "Выберите свою фигуру и свободную клетку для телепорта.",
+        description: "Кликни по своей фигуре, затем — по пустой клетке.",
+        // effect получает массив [с чего, куда]
         effect: ([from, to]) => {
           const piece = game.get(from);
           if (!piece || piece.color !== currentTurn) {
-            alert("Выберите свою фигуру.");
-            return;
+            alert("Это не ваша фигура!");
+            return false;
           }
           if (game.get(to)) {
-            alert("Клетка занята.");
-            return;
+            alert("Клетка занята!");
+            return false;
           }
           game.remove(from);
           game.put(piece, to);
           board.position(game.fen());
+          return true;
         }
       },
       {
         id: "double_move",
         name: "⚡ Двойной ход",
-        description: "Сделайте ещё один ход.",
+        description: "Сделайте дополнительный ход сразу.",
         effect: () => {
           extraMove = true;
           alert("Дополнительный ход активирован!");
+          return true;
         }
       }
     ];
 
+
+    // === 4. Создаём и рендерим шахматную доску ===
+    // onDrop — вызывается, когда игрок перемещает фигуру
+    // onSquareClick — когда игрок кликает на любую клетку
     const board = Chessboard('board', {
       draggable: true,
       position: 'start',
@@ -128,68 +171,172 @@
       onSquareClick: onSquareClick
     });
 
+    // === 5. Обработчик хода фигуры ===
     function onDrop(source, target) {
+      // Если на клетке source есть заморозка — запрещаем ход
       if (playerState.frozenPieces[source]) {
-        alert("Эта фигура заморожена.");
+        alert("Эта фигура заморожена и не может двигаться.");
         return 'snapback';
       }
 
+      // Делаем ход через chess.js
       const move = game.move({ from: source, to: target, promotion: 'q' });
-      if (move === null) return 'snapback';
+      if (move === null) {
+        // Невалидный ход — возвращаем на место
+        return 'snapback';
+      }
 
+      // Обновляем UI и статус
+      board.position(game.fen());
       updateStatus();
 
-      if (!extraMove) switchTurn();
-      else extraMove = false;
-
-      board.position(game.fen());
+      // Если карта «двойной ход» была активна — даём второй ход, иначе меняем ход
+      if (!extraMove) {
+        switchTurn();
+      } else {
+        extraMove = false;
+      }
     }
 
+    // === 6. Обработчик клика по клетке (для применения карт) ===
+    // Если игрок выбрал карту, то сюда прилетит событие клика по клетке.
+    function onSquareClick(square) {
+      // Если не выбрана карта — ничего не делаем
+      if (selectedCardIndex === null) return;
+
+      const card = playerState.hand[selectedCardIndex];
+
+      // Карта «Заморозка»: достаточно одного клика по вражеской фигуре
+      if (card.id === "freeze") {
+        const success = card.effect(square);
+        if (success) {
+          // Удаляем карту из руки
+          playerState.hand.splice(selectedCardIndex, 1);
+          selectedCardIndex = null;
+          renderHand();
+        }
+        return;
+      }
+
+      // Карта «Телепорт»: два клика — сначала по своей фигуре, потом по пустой клетке
+      if (card.id === "teleport") {
+        // Запоминаем первый клик
+        if (cardTargetStep === 0) {
+          // Проверим, что это действительно ваша фигура
+          const piece = game.get(square);
+          if (!piece || piece.color !== currentTurn) {
+            alert("Кликните сначала по своей фигуре.");
+            return;
+          }
+          cardTargetData[0] = square;
+          cardTargetStep = 1;
+          alert("Теперь кликните по пустой клетке, куда телепортировать.");
+          return;
+        } else if (cardTargetStep === 1) {
+          // Второй клик — пустая клетка
+          const to = square;
+          if (game.get(to)) {
+            alert("Клетка занята, выберите другую.");
+            return;
+          }
+          cardTargetData[1] = to;
+          // Применим эффект
+          const success = card.effect(cardTargetData);
+          if (success) {
+            playerState.hand.splice(selectedCardIndex, 1);
+            selectedCardIndex = null;
+            cardTargetStep = 0;
+            cardTargetData = [];
+            renderHand();
+          } else {
+            // Если эффект не сработал, сбрасываем выбор
+            selectedCardIndex = null;
+            cardTargetStep = 0;
+            cardTargetData = [];
+            renderHand();
+          }
+          return;
+        }
+      }
+
+      // Карта «Двойной ход»: не требует выбора клетки
+      if (card.id === "double_move") {
+        const success = card.effect();
+        if (success) {
+          playerState.hand.splice(selectedCardIndex, 1);
+          selectedCardIndex = null;
+          renderHand();
+        }
+        return;
+      }
+    }
+
+    // === 7. Смена хода и уменьшение “заморозок” ===
     function switchTurn() {
       currentTurn = currentTurn === 'w' ? 'b' : 'w';
 
-      for (const square in playerState.frozenPieces) {
-        playerState.frozenPieces[square]--;
-        if (playerState.frozenPieces[square] <= 0)
-          delete playerState.frozenPieces[square];
+      // Уменьшаем количество ходов, на которые клетки заморожены
+      for (const sq in playerState.frozenPieces) {
+        playerState.frozenPieces[sq]--;
+        if (playerState.frozenPieces[sq] <= 0) {
+          delete playerState.frozenPieces[sq];
+        }
       }
 
       updateStatus();
     }
 
+    // === 8. Обновляем строку статуса (чей ход / конец игры) ===
     function updateStatus() {
-      const status = document.getElementById("status");
+      const statusEl = document.getElementById('status');
       if (game.game_over()) {
-        status.textContent = "Игра окончена.";
+        if (game.in_checkmate()) {
+          statusEl.textContent = 'Мат! Игра окончена.';
+        } else if (game.in_draw()) {
+          statusEl.textContent = 'Ничья! Игра окончена.';
+        } else {
+          statusEl.textContent = 'Игра окончена.';
+        }
       } else {
-        status.textContent = `Ход ${currentTurn === 'w' ? 'белых' : 'чёрных'}`;
+        statusEl.textContent = `Ход ${currentTurn === 'w' ? 'белых' : 'чёрных'}`;
       }
     }
 
+    // === 9. Логика для карт: добор, рендер руки, выбор карты ===
+    let selectedCardIndex = null;   // индекс выбранной карты в руке
+    let cardTargetStep = 0;         // для карт, которым нужен 2-этапный выбор (например, teleport)
+    let cardTargetData = [];        // промежуточные данные выбора
+
+    // Нажали "Взять карту" — рандомим из cardPool
     function drawCard() {
-      const card = JSON.parse(JSON.stringify(cardPool[Math.floor(Math.random() * cardPool.length)]));
-      playerState.hand.push(card);
+      const cardCopy = JSON.parse(JSON.stringify(cardPool[Math.floor(Math.random() * cardPool.length)]));
+      playerState.hand.push(cardCopy);
       renderHand();
     }
 
+    // Отрисовываем всю руку (список .card)
     function renderHand() {
-      const hand = document.getElementById("hand");
-      hand.innerHTML = "";
-      playerState.hand.forEach((card, index) => {
-        const el = document.createElement("div");
-        el.className = "card" + (index === selectedCardIndex ? " selected-card" : "");
-        el.innerHTML = `<b>${card.name}</b><br><small>${card.description}</small>`;
-        el.onclick = () => selectCard(index);
-        hand.appendChild(el);
+      const handEl = document.getElementById('hand');
+      handEl.innerHTML = '';
+
+      playerState.hand.forEach((card, idx) => {
+        const div = document.createElement('div');
+        div.className = 'card' + (selectedCardIndex === idx ? ' selected-card' : '');
+        div.innerHTML = `<b>${card.name}</b><br><small>${card.description}</small>`;
+        div.onclick = () => selectCard(idx);
+        handEl.appendChild(div);
       });
     }
 
+    // Выбрали карту из руки
     function selectCard(index) {
+      // Если кликнули по уже выбранной карте — отменяем выбор
       if (selectedCardIndex === index) {
         selectedCardIndex = null;
         cardTargetStep = 0;
         cardTargetData = [];
       } else {
+        // Выбираем новую
         selectedCardIndex = index;
         cardTargetStep = 0;
         cardTargetData = [];
@@ -197,42 +344,7 @@
       renderHand();
     }
 
-    function onSquareClick(square) {
-      if (selectedCardIndex === null) return;
-      const card = playerState.hand[selectedCardIndex];
-
-      // Простые карты с одной целью
-      if (card.id === "freeze") {
-        card.effect(square);
-        playerState.hand.splice(selectedCardIndex, 1);
-        selectedCardIndex = null;
-        renderHand();
-        return;
-      }
-
-      // Сложные карты с двумя целями
-      if (card.id === "teleport") {
-        cardTargetData.push(square);
-        cardTargetStep++;
-        if (cardTargetStep === 2) {
-          card.effect(cardTargetData);
-          playerState.hand.splice(selectedCardIndex, 1);
-          selectedCardIndex = null;
-          cardTargetStep = 0;
-          cardTargetData = [];
-          renderHand();
-        }
-        return;
-      }
-
-      if (card.id === "double_move") {
-        card.effect();
-        playerState.hand.splice(selectedCardIndex, 1);
-        selectedCardIndex = null;
-        renderHand();
-      }
-    }
-
+    // Запускаем первоначальный статус
     updateStatus();
   </script>
 </body>
